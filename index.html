@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanCraft Generator</title>
+  <link rel="icon" type="image/png" href="img/logo1.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    .logo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .logo img {
+      border-radius: 10%;
+      height: 60px;
+      margin-right: 15px;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 40px;
+      background: aliceblue;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-attachment: fixed;
+      color: #333;
+    }
+    h2, h3 {
+      color: #222;
+    }
+    form {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    input, button {
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .qr-box {
+      text-align: center;
+      margin-top: 30px;
+    }
+    #resultText {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #e9f5ff;
+      border-left: 5px solid #007bff;
+      white-space: pre-wrap;
+    }
+    .logout-button {
+      background-color: #e76d10;
+      color: white;
+      border: none;
+      max-width: 10vh;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .logout-button:hover {
+      background-color: #c82333;
+    }
+    .history-link {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: #007bff;
+      font-size: 1.1em;
+    }
+    .history-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <div style="display: flex; align-items: center;">
+      <img src="img/logo1.png" alt="App Logo">
+      <h2>ScanCraft Generator</h2>
+    </div>
+    <button class="logout-button" onclick="logout()">Logout</button>
+  </div>
+
+  <a href="history.html" class="history-link">View QR Code History</a>
+
+  <form id="textForm">
+    <label>Enter text or link:</label>
+    <input type="text" id="simpleContent">
+    <button type="submit">Generate QR</button>
+  </form>
+
+  <h3>Calendar Event QR Code</h3>
+  <form id="eventForm">
+    <label>Event Title:</label>
+    <input type="text" id="title" required>
+
+    <label>Location:</label>
+    <input type="text" id="location">
+
+    <label>Start Date and Time:</label>
+    <input type="datetime-local" id="start" required>
+
+    <label>End Date and Time:</label>
+    <input type="datetime-local" id="end" required>
+
+    <label>Event URL (optional):</label>
+    <input type="url" id="url">
+
+    <button type="submit">Generate Event QR</button>
+  </form>
+
+  <div class="qr-box">
+    <h3>Generated QR Code:</h3>
+    <div id="qrcode"></div>
+    <div id="resultText"></div>
+  </div>
+
+  <script>
+    function formatDateToUTC(dateString) {
+      const date = new Date(dateString);
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    }
+
+    function generateQRCode(text, displayText) {
+      document.getElementById('qrcode').innerHTML = '';
+      new QRCode(document.getElementById('qrcode'), {
+        text: text,
+        width: 256,
+        height: 256
+      });
+      document.getElementById('resultText').textContent = displayText;
+    }
+
+    document.getElementById('textForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const content = document.getElementById('simpleContent').value;
+      const response = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'text', content })
+      });
+      const data = await response.json();
+      generateQRCode(data.result, data.display);
+    });
+
+    document.getElementById('eventForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value;
+      const location = document.getElementById('location').value;
+      const start = formatDateToUTC(document.getElementById('start').value);
+      const end = formatDateToUTC(document.getElementById('end').value);
+      const url = document.getElementById('url').value;
+
+      const response = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'event', title, location, start, end, url })
+      });
+
+      const data = await response.json();
+      generateQRCode(data.result, data.display);
+    });
+
+    function logout() {
+      window.location.href = '/logout';
+    }
+  </script>
+</body>
+</html>
